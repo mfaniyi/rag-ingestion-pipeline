@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RAG Document Ingestion</title>
+
+    <style>
+        /* Define the main page layout and typography */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px 15px;
+        }
+
+        /* Main application card */
+        .container {
+            width: 100%;
+            max-width: 720px;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Header section */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header-icon {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 30px;
+        }
+
+        .subtitle {
+            margin: 0;
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        /* Upload area */
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 35px 20px;
+            text-align: center;
+            background: #f8fafc;
+            transition: 0.2s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #64748b;
+            background: #f1f5f9;
+        }
+
+        .upload-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .upload-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .upload-info {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        /* File input */
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+        }
+
+        /* Upload button */
+        button {
+            width: 100%;
+            margin-top: 18px;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Processing pipeline */
+        .pipeline {
+            margin-top: 30px;
+        }
+
+        .pipeline-title {
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+
+        .steps {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .step {
+            padding: 7px 11px;
+            border-radius: 20px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 13px;
+        }
+
+        /* Result section */
+        #result {
+            margin-top: 25px;
+        }
+
+        .success {
+            padding: 20px;
+            border-radius: 10px;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+        }
+
+        .success h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 7px 0;
+            border-bottom: 1px solid #d1fae5;
+            font-size: 14px;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: #065f46;
+        }
+
+        .result-value {
+            font-weight: bold;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .error {
+            padding: 15px;
+            border-radius: 10px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        /* Footer note */
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        /* Improve layout on smaller screens */
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px 20px;
+            }
+
+            h1 {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="container">
+
+        <!-- Application header -->
+        <div class="header">
+            <div class="header-icon">📚</div>
+
+            <h1>RAG Document Ingestion</h1>
+
+            <p class="subtitle">
+                Upload a document and let the ingestion pipeline
+                prepare it for retrieval.
+            </p>
+        </div>
+
+        <!-- Document upload form -->
+        <form id="uploadForm">
+
+            <div class="upload-area">
+                <div class="upload-icon">📄</div>
+
+                <div class="upload-title">
+                    Select a document to upload
+                </div>
+
+                <div class="upload-info">
+                    Supported formats: PDF and TXT · Maximum size: 10 MB
+                </div>
+
+                <!-- Allow only supported document types -->
+                <input
+                    type="file"
+                    id="file"
+                    name="file"
+                    accept=".pdf,.txt"
+                    required
+                >
+
+                <!-- Start the ingestion process -->
+                <button type="submit" id="uploadButton">
+                    Upload & Process Document
+                </button>
+            </div>
+
+        </form>
+
+        <!-- Show the ingestion pipeline -->
+        <section class="pipeline">
+
+            <div class="pipeline-title">
+                INGESTION PIPELINE
+            </div>
+
+            <div class="steps">
+                <span class="step">Upload</span>
+                <span class="step">Validate</span>
+                <span class="step">Extract</span>
+                <span class="step">Chunk</span>
+                <span class="step">Embed</span>
+                <span class="step">Store</span>
+            </div>
+
+        </section>
+
+        <!-- Display the API result -->
+        <div id="result"></div>
+
+        <div class="footer">
+            Powered by FastAPI · PostgreSQL · pgvector
+        </div>
+
+    </main>
+
+    <script>
+        // Handle the document upload without refreshing the page.
+        document.getElementById("uploadForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const fileInput = document.getElementById("file");
+            const uploadButton = document.getElementById("uploadButton");
+            const result = document.getElementById("result");
+
+            // Make sure a file has been selected.
+            if (!fileInput.files.length) {
+                result.innerHTML = `
+                    <div class="error">
+                        Please select a document before uploading.
+                    </div>
+                `;
+                return;
+            }
+
+            // Create form data containing the selected document.
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            // Show the processing state.
+            uploadButton.disabled = true;
+            uploadButton.textContent = "Processing document...";
+            result.innerHTML = `
+                <div class="success">
+                    Your document is being processed. Please wait...
+                </div>
+            `;
+
+            try {
+                // Send the document to the existing ingestion endpoint.
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // Display validation or processing errors.
+                if (!response.ok) {
+                    throw new Error(data.detail || "Document processing failed.");
+                }
+
+                // Display a friendly ingestion summary.
+                result.innerHTML = `
+                    <div class="success">
+                        <h3>✅ Document successfully processed</h3>
+
+                        <div class="result-row">
+                            <span class="result-label">File</span>
+                            <span class="result-value">${data.filename}</span>
+                        </div>
+
+                        <div class="result-row">
+                            <span class="result-label">Chunks created</span>
+                            <span class="result-value">${data.chunks_created}</span>
+                        </div>
+
+                        <div class="result-row">
+                            <span class="result-label">Embeddings generated</span>
+                            <span class="result-value">${data.embeddings_generated}</span>
+                        </div>
+
+                        <div class="result-row">
+                            <span class="result-label">Chunks stored</span>
+                            <span class="result-value">${data.stored}</span>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                // Display the error message if processing fails.
+                result.innerHTML = `
+                    <div class="error">
+                        ❌ ${error.message}
+                    </div>
+                `;
+            } finally {
+                // Restore the upload button after processing.
+                uploadButton.disabled = false;
+                uploadButton.textContent = "Upload & Process Document";
+            }
+        });
+    </script>
+
+</body>
+</html>
