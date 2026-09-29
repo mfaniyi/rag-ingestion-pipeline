@@ -451,6 +451,31 @@ Upload → Chunk → Embed → Store
 
 Retrieval, similarity search, prompt construction, and LLM generation are outside the scope of this ingestion assignment.
 
+## Verification
+
+The ingestion pipeline was verified end-to-end using the web upload interface.
+
+A PDF document was uploaded through `/ui` and successfully processed:
+
+- File: `dangote-petroleum-refinery-faqs-CGG-sPAx.pdf`
+- Chunks created: 62
+- Embeddings generated: 62
+- Chunks stored: 62
+
+PostgreSQL verification confirmed:
+
+- Database rows: 62
+- Rows with embeddings: 62
+
+Automated testing was also added:
+
+- Local pytest result: 8 passed
+- GitHub Actions CI: passed
+
+The verification confirms the complete ingestion flow:
+
+Upload → Validation → Extraction → Chunking → Embedding → PostgreSQL/pgvector Storage
+
 ## Conclusion
 
 The completed pipeline demonstrates how documents can be safely uploaded, transformed into meaningful chunks, converted into vector embeddings, and stored with metadata in a PostgreSQL database using pgvector.
