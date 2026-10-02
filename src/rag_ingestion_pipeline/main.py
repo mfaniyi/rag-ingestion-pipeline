@@ -2,13 +2,21 @@ from uuid import uuid4
 from pathlib import Path
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 from rag_ingestion_pipeline.chunking import fixed_size_chunk
-from rag_ingestion_pipeline.database import create_tables, save_chunks
+from rag_ingestion_pipeline.database import create_tables, engine, save_chunks
 from rag_ingestion_pipeline.embeddings import generate_embedding
 from rag_ingestion_pipeline.ingestion import extract_document, validate_upload
-
+from rag_ingestion_pipeline.retrieval import hybrid_search
+from rag_ingestion_pipeline.reranking import rerank_chunks
+from rag_ingestion_pipeline.generation import generate_grounded_answer
 
 app = FastAPI(title="RAG Ingestion Pipeline")
+class AskRequest(BaseModel):
+    """Represent a question sent to the RAG system."""
+    # Store the user's question.
+    question: str
 
 
 # Create the database tables when the application starts.
@@ -64,6 +72,90 @@ async def upload_document(file: UploadFile = File(...)):
         "stored": len(chunks),
         "message": "Document successfully ingested",
     }
+
+
+@app.post("/ask")
+def ask_question(request: AskRequest):
+    """Retrieve evidence and generate a grounded answer."""
+
+    # Generate an embedding for the user's question.
+    query_embedding = generate_embedding(request.question)
+
+    # Connect to PostgreSQL for retrieval.
+    with Session(engine) as session:
+        # Retrieve a larger candidate pool using hybrid search.
+        hybrid_results = hybrid_search(
+            session,
+            request.question,
+            query_embedding,
+            top_k=10,
+        )
+
+    # Extract the retrieved chunks from the hybrid results.
+    candidate_chunks = [
+        chunk
+        for chunk, _ in hybrid_results
+    ]
+
+    # Rerank the candidate chunks using the cross-encoder.
+    reranked_results = rerank_chunks(
+        request.question,
+        candidate_chunks,
+        top_k=5,
+    )
+
+    # Refuse to answer when no evidence was retrieved.
+    if not reranked_results:
+        return {
+            "question": request.question,
+            "answer": (
+                "I could not find enough information in the uploaded "
+                "documents to answer this question."
+            ),
+            "sources": [],
+        }
+
+    # Build citation-labelled context for the language model.
+    context_parts = []
+
+    for chunk, _ in reranked_results:
+        # Use the page number when available.
+        page = (
+            str(chunk.page_number)
+            if chunk.page_number is not None
+            else "Unknown"
+        )
+
+        # Add metadata before the chunk so the model can cite it.
+        context_parts.append(
+            f"[Page {page}, Chunk {chunk.chunk_index}]\n"
+            f"{chunk.text}"
+        )
+
+    # Combine all retrieved chunks into one context.
+    context = "\n\n".join(context_parts)
+
+    # Generate an answer grounded only in the retrieved evidence.
+    answer = generate_grounded_answer(
+        question=request.question,
+        context=context,
+    )
+
+    # Return the grounded answer and supporting sources.
+    return {
+        "question": request.question,
+        "answer": answer,
+        "sources": [
+            {
+                "document_id": chunk.document_id,
+                "page_number": chunk.page_number,
+                "chunk_index": chunk.chunk_index,
+                "text": chunk.text,
+            }
+            for chunk, _ in reranked_results
+        ],
+    }
+
 
 @app.get("/ui", response_class=HTMLResponse)
 def upload_ui():

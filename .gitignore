@@ -11,3 +11,6 @@ wheels/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
+
+# Keep API keys and environment variables out of Git.
+.env
