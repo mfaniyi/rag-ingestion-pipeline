@@ -17,6 +17,22 @@ jobs:
     name: Run automated tests
     runs-on: ubuntu-latest
 
+    # Start PostgreSQL with pgvector for the test environment.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: raguser
+          POSTGRES_PASSWORD: ragpassword
+          POSTGRES_DB: ragdb
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U raguser -d ragdb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       # Check out the repository.
       - name: Checkout repository
@@ -32,6 +48,16 @@ jobs:
       # Install dependencies exactly as recorded in uv.lock.
       - name: Install dependencies
         run: uv sync --locked --dev
+
+      # Enable the pgvector extension required by the application.
+      - name: Enable pgvector
+        run: |
+          PGPASSWORD=ragpassword psql \
+            -h localhost \
+            -p 5433 \
+            -U raguser \
+            -d ragdb \
+            -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
       # Execute the automated test suite.
       - name: Run tests
