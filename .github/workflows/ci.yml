@@ -8,8 +8,13 @@ on:
     branches:
       - master
 
+# Grant the workflow read-only access to repository contents.
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: Run automated tests
     runs-on: ubuntu-latest
 
     steps:
@@ -17,14 +22,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Install uv.
-      - name: Install uv
+      # Install uv and the project's pinned Python version.
+      - name: Install uv and Python
         uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.14"
+          enable-cache: true
 
-      # Install the project's dependencies.
+      # Install dependencies exactly as recorded in uv.lock.
       - name: Install dependencies
-        run: uv sync --dev
+        run: uv sync --locked --dev
 
-      # Run the automated test suite.
+      # Execute the automated test suite.
       - name: Run tests
-        run: uv run pytest
+        run: uv run pytest -q
