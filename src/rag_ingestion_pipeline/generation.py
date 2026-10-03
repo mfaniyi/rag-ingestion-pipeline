@@ -11,18 +11,18 @@ endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
 api_key = os.getenv("AZURE_OPENAI_API_KEY")
 deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 
-# Create the OpenAI client for Microsoft Foundry.
-client = OpenAI(
-    api_key=api_key,
-    base_url=endpoint,
-)
-
 
 def generate_grounded_answer(
     question: str,
     context: str,
 ) -> str:
     """Generate an answer using only the supplied document context."""
+
+    # Create the OpenAI client only when a model call is actually needed.
+    client = OpenAI(
+        api_key=api_key,
+        base_url=endpoint,
+    )
 
     # Define strict grounding and citation instructions.
     instructions = """
