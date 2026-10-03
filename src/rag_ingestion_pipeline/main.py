@@ -1,9 +1,11 @@
 from uuid import uuid4
 from pathlib import Path
+
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
 from rag_ingestion_pipeline.chunking import fixed_size_chunk
 from rag_ingestion_pipeline.database import create_tables, engine, save_chunks
 from rag_ingestion_pipeline.embeddings import generate_embedding
@@ -12,11 +14,18 @@ from rag_ingestion_pipeline.retrieval import hybrid_search
 from rag_ingestion_pipeline.reranking import rerank_chunks
 from rag_ingestion_pipeline.generation import generate_grounded_answer
 
+
 app = FastAPI(title="RAG Ingestion Pipeline")
+
+
 class AskRequest(BaseModel):
-    """Represent a question sent to the RAG system."""
+    """Represent a question about a specific uploaded document."""
+
     # Store the user's question.
     question: str
+
+    # Store the document that the question should search.
+    document_id: str
 
 
 # Create the database tables when the application starts.
@@ -51,6 +60,12 @@ async def upload_document(file: UploadFile = File(...)):
             overlap=50,
         )
 
+        # Reject documents that contain no usable text.
+        if not chunks:
+            raise ValueError(
+                "The uploaded document is empty or contains no usable text."
+            )
+
         # Generate an embedding for every chunk.
         embeddings = [
             generate_embedding(chunk.text)
@@ -62,7 +77,10 @@ async def upload_document(file: UploadFile = File(...)):
 
     except ValueError as error:
         # Return validation and processing errors as a client error.
-        raise HTTPException(status_code=400, detail=str(error)) from error
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        ) from error
 
     return {
         "filename": file.filename,
@@ -89,6 +107,7 @@ def ask_question(request: AskRequest):
             request.question,
             query_embedding,
             top_k=10,
+            document_id=request.document_id,
         )
 
     # Extract the retrieved chunks from the hybrid results.
@@ -119,16 +138,19 @@ def ask_question(request: AskRequest):
     context_parts = []
 
     for chunk, _ in reranked_results:
-        # Use the page number when available.
-        page = (
-            str(chunk.page_number)
-            if chunk.page_number is not None
-            else "Unknown"
-        )
+        # Build a page-aware citation for documents that have page numbers.
+        if chunk.page_number is not None:
+            citation = (
+                f"[Page {chunk.page_number}, "
+                f"Chunk {chunk.chunk_index}]"
+            )
+        else:
+            # Use only the chunk number for documents without pages, such as TXT.
+            citation = f"[Chunk {chunk.chunk_index}]"
 
-        # Add metadata before the chunk so the model can cite it.
+        # Add the citation before the chunk so the model can reference it.
         context_parts.append(
-            f"[Page {page}, Chunk {chunk.chunk_index}]\n"
+            f"{citation}\n"
             f"{chunk.text}"
         )
 

@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
 <title>DocuMind — RAG Document Assistant</title>
 
 <style>
@@ -481,6 +480,71 @@
         line-height: 1.7;
     }
 
+    /* Style inline citation markers as small superscript references. */
+    .citation-marker {
+        display: inline-block;
+        margin-left: 2px;
+        padding: 0 3px;
+        border-radius: 5px;
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.4;
+        vertical-align: super;
+        cursor: pointer;
+    }
+
+    /* Create the collapsible supporting sources container. */
+    .sources-panel {
+        margin-top: 16px;
+    }
+
+    /* Style the button that reveals supporting sources. */
+    .sources-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: white;
+        color: var(--text);
+        font-size: 13px;
+        font-weight: 750;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+
+    /* Add hover feedback to the sources button. */
+    .sources-toggle:hover {
+        border-color: #a5b4fc;
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+    }
+
+    /* Style the arrow used by the sources button. */
+    .sources-arrow {
+        transition: transform 0.2s ease;
+    }
+
+    /* Rotate the arrow when sources are visible. */
+    .sources-toggle.open .sources-arrow {
+        transform: rotate(180deg);
+    }
+
+    /* Hide the sources until the user opens them. */
+    .sources-content {
+        display: none;
+        margin-top: 10px;
+    }
+
+    /* Display the sources when the panel is opened. */
+    .sources-content.open {
+        display: block;
+    }
+
     /* Style source cards. */
     .source-card {
         margin-top: 10px;
@@ -590,17 +654,16 @@
         }
     }
 </style>
-```
 
 </head>
 
 <body>
 
-```
 <main class="app">
 
     <!-- Display the application brand and system status. -->
     <header class="topbar">
+
         <div class="brand">
             <div class="brand-icon">✦</div>
 
@@ -614,6 +677,7 @@
             <span class="status-dot"></span>
             RAG system online
         </div>
+
     </header>
 
     <!-- Divide the application into ingestion and question-answering panels. -->
@@ -623,7 +687,10 @@
         <section class="panel">
 
             <div class="panel-header">
-                <div class="eyebrow">01 · Knowledge</div>
+
+                <div class="eyebrow">
+                    01 · Knowledge
+                </div>
 
                 <h2>Upload a document</h2>
 
@@ -632,6 +699,7 @@
                     The pipeline will extract, chunk, embed and store
                     the content for retrieval.
                 </p>
+
             </div>
 
             <div class="panel-body">
@@ -653,7 +721,10 @@
                         </div>
 
                         <!-- Open the native file selector. -->
-                        <label for="file" class="browse-button">
+                        <label
+                            for="file"
+                            class="browse-button"
+                        >
                             Choose document
                         </label>
 
@@ -667,34 +738,55 @@
                         >
 
                         <!-- Display the selected filename. -->
-                        <div id="selectedFile" class="selected-file"></div>
+                        <div
+                            id="selectedFile"
+                            class="selected-file"
+                        ></div>
 
                     </div>
 
                     <!-- Display the ingestion stages. -->
                     <div class="pipeline">
 
-                        <div class="pipeline-step" id="stepUpload">
+                        <div
+                            class="pipeline-step"
+                            id="stepUpload"
+                        >
                             01 · Upload
                         </div>
 
-                        <div class="pipeline-step" id="stepValidate">
+                        <div
+                            class="pipeline-step"
+                            id="stepValidate"
+                        >
                             02 · Validate
                         </div>
 
-                        <div class="pipeline-step" id="stepExtract">
+                        <div
+                            class="pipeline-step"
+                            id="stepExtract"
+                        >
                             03 · Extract
                         </div>
 
-                        <div class="pipeline-step" id="stepChunk">
+                        <div
+                            class="pipeline-step"
+                            id="stepChunk"
+                        >
                             04 · Chunk
                         </div>
 
-                        <div class="pipeline-step" id="stepEmbed">
+                        <div
+                            class="pipeline-step"
+                            id="stepEmbed"
+                        >
                             05 · Embed
                         </div>
 
-                        <div class="pipeline-step" id="stepStore">
+                        <div
+                            class="pipeline-step"
+                            id="stepStore"
+                        >
                             06 · Store
                         </div>
 
@@ -712,7 +804,10 @@
                 </form>
 
                 <!-- Show the active uploaded document. -->
-                <div id="documentCard" class="document-card">
+                <div
+                    id="documentCard"
+                    class="document-card"
+                >
 
                     <div class="document-info">
 
@@ -721,13 +816,18 @@
                         </div>
 
                         <div>
-                            <div id="documentName" class="document-name">
+
+                            <div
+                                id="documentName"
+                                class="document-name"
+                            >
                                 Document uploaded
                             </div>
 
                             <div class="document-status">
                                 Ready for questions
                             </div>
+
                         </div>
 
                     </div>
@@ -745,7 +845,10 @@
         <section class="panel">
 
             <div class="panel-header">
-                <div class="eyebrow">02 · Ask</div>
+
+                <div class="eyebrow">
+                    02 · Ask
+                </div>
 
                 <h2>Ask your document</h2>
 
@@ -754,6 +857,7 @@
                     questions and receive answers grounded in the
                     retrieved document evidence.
                 </p>
+
             </div>
 
             <div class="panel-body">
@@ -812,13 +916,22 @@
                 <div class="answer-area">
 
                     <div class="answer-heading">
+
                         <h3>Answer</h3>
-                        <span id="answerStatus" class="answer-status">
+
+                        <span
+                            id="answerStatus"
+                            class="answer-status"
+                        >
                             Waiting for a document
                         </span>
+
                     </div>
 
-                    <div id="answerCard" class="answer-card">
+                    <div
+                        id="answerCard"
+                        class="answer-card"
+                    >
                         Upload and process a document to activate
                         document Q&A.
                     </div>
@@ -834,7 +947,8 @@
     </section>
 
     <div class="footer">
-        FastAPI · PostgreSQL · pgvector · Hybrid Retrieval · Reranking · LLM
+        FastAPI · PostgreSQL · pgvector · Hybrid Retrieval ·
+        Reranking · LLM
     </div>
 
 </main>
@@ -842,6 +956,9 @@
 <script>
     // Track whether a document has successfully completed ingestion.
     let documentUploaded = false;
+
+    // Store the ID of the document currently selected for Q&A.
+    let uploadedDocumentId = null;
 
     // Cache the main interface elements.
     const uploadForm = document.getElementById("uploadForm");
@@ -866,18 +983,23 @@
         if (documentUploaded) {
             question.placeholder =
                 "Ask a question about the uploaded document...";
+
             answerStatus.textContent = "Document ready";
+
             answerCard.textContent =
                 "Your document is ready. Ask a question to retrieve grounded evidence.";
         } else {
             question.placeholder =
                 "Upload a document to start asking questions...";
-            answerStatus.textContent = "Waiting for a document";
+
+            answerStatus.textContent =
+                "Waiting for a document";
         }
     }
 
     // Show the selected filename before ingestion begins.
     fileInput.addEventListener("change", function () {
+
         if (!fileInput.files.length) {
             selectedFile.style.display = "none";
             return;
@@ -886,11 +1008,19 @@
         const file = fileInput.files[0];
 
         selectedFile.style.display = "block";
-        selectedFile.textContent = `Selected: ${file.name}`;
+        selectedFile.textContent =
+            `Selected: ${file.name}`;
 
         // A newly selected document requires a new ingestion cycle.
         documentUploaded = false;
+
+        // Clear the previous document ID so it cannot be queried accidentally.
+        uploadedDocumentId = null;
+
+        // Hide the previous uploaded-document status.
         documentCard.style.display = "none";
+
+        // Lock the Q&A interface until ingestion succeeds.
         updateAskState();
     });
 
@@ -907,7 +1037,9 @@
 
     // Accept a dropped document and populate the file input.
     uploadArea.addEventListener("drop", function (event) {
+
         event.preventDefault();
+
         uploadArea.classList.remove("dragging");
 
         const files = event.dataTransfer.files;
@@ -917,11 +1049,14 @@
         }
 
         fileInput.files = files;
+
+        // Trigger the same logic used by normal file selection.
         fileInput.dispatchEvent(new Event("change"));
     });
 
     // Highlight each ingestion stage while processing.
     function activatePipeline() {
+
         const steps = [
             "stepUpload",
             "stepValidate",
@@ -932,245 +1067,467 @@
         ];
 
         steps.forEach(function (stepId) {
-            document.getElementById(stepId).classList.add("active");
+            document
+                .getElementById(stepId)
+                .classList.add("active");
         });
     }
 
     // Handle document ingestion without refreshing the page.
-    uploadForm.addEventListener("submit", async function (event) {
-        event.preventDefault();
+    uploadForm.addEventListener(
+        "submit",
+        async function (event) {
 
-        if (!fileInput.files.length) {
-            uploadResult.innerHTML = `
-                <div class="message error">
-                    Please choose a document before processing.
-                </div>
-            `;
-            return;
-        }
+            event.preventDefault();
 
-        const file = fileInput.files[0];
+            if (!fileInput.files.length) {
 
-        // Reset the previous document state before processing.
-        documentUploaded = false;
-        updateAskState();
-
-        // Build the multipart request expected by FastAPI.
-        const formData = new FormData();
-        formData.append("file", file);
-
-        // Show the ingestion processing state.
-        uploadButton.disabled = true;
-        uploadButton.textContent = "Processing...";
-        uploadResult.innerHTML = `
-            <div class="message info">
-                Processing ${file.name}. Extracting content,
-                creating embeddings and storing chunks...
-            </div>
-        `;
-
-        activatePipeline();
-
-        try {
-            // Send the document to the existing upload endpoint.
-            const response = await fetch("/upload", {
-                method: "POST",
-                body: formData
-            });
-
-            const data = await response.json();
-
-            // Surface API validation or processing errors.
-            if (!response.ok) {
-                throw new Error(
-                    data.detail || "Document processing failed."
-                );
-            }
-
-            // Mark the document as available for Q&A.
-            documentUploaded = true;
-
-            // Display the active document.
-            documentCard.style.display = "block";
-            documentName.textContent = data.filename;
-
-            // Clear any previous answer and sources.
-            answerCard.textContent =
-                "Your document is ready. Ask a question to retrieve grounded evidence.";
-            sources.innerHTML = "";
-
-            // Enable the Q&A interface.
-            updateAskState();
-
-            // Display the ingestion summary.
-            uploadResult.innerHTML = `
-                <div class="message success">
-                    <strong>Document ready.</strong>
-                    ${data.chunks_created} chunks were created,
-                    embedded and stored successfully.
-                </div>
-            `;
-
-        } catch (error) {
-            // Keep Q&A disabled if ingestion fails.
-            documentUploaded = false;
-            updateAskState();
-
-            // Display the ingestion error.
-            uploadResult.innerHTML = `
-                <div class="message error">
-                    ${error.message}
-                </div>
-            `;
-        } finally {
-            // Restore the upload button.
-            uploadButton.disabled = false;
-            uploadButton.textContent = "Process document";
-        }
-    });
-
-    // Handle document questions.
-    askButton.addEventListener("click", async function () {
-        // Prevent questions from being submitted without an uploaded document.
-        if (!documentUploaded) {
-            answerCard.textContent =
-                "Please upload and successfully process a document first.";
-            return;
-        }
-
-        const questionText = question.value.trim();
-
-        // Prevent empty questions.
-        if (!questionText) {
-            answerCard.textContent =
-                "Please enter a question about the document.";
-            return;
-        }
-
-        // Show the retrieval and generation state.
-        askButton.disabled = true;
-        askButton.textContent = "Searching...";
-        answerStatus.textContent = "Retrieving evidence...";
-        answerCard.textContent =
-            "Searching the document and generating a grounded answer...";
-        sources.innerHTML = "";
-
-        try {
-            // Send the question to the existing RAG endpoint.
-            const response = await fetch("/ask", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    question: questionText
-                })
-            });
-
-            const data = await response.json();
-
-            // Surface API errors.
-            if (!response.ok) {
-                throw new Error(
-                    data.detail || "Unable to answer the question."
-                );
-            }
-
-            // Display the grounded answer.
-            answerCard.textContent = data.answer;
-            answerStatus.textContent =
-                `${data.sources.length} source(s) retrieved`;
-
-            // Display the supporting source chunks.
-            if (data.sources.length) {
-                sources.innerHTML = `
-                    <div style="
-                        margin-top: 18px;
-                        margin-bottom: 9px;
-                        font-size: 13px;
-                        font-weight: 750;
-                    ">
-                        Supporting sources
+                uploadResult.innerHTML = `
+                    <div class="message error">
+                        Please choose a document before processing.
                     </div>
                 `;
 
-                data.sources.forEach(function (source) {
-                    const sourceCard =
-                        document.createElement("div");
-
-                    sourceCard.className = "source-card";
-
-                    const page =
-                        source.page_number !== null
-                            ? `Page ${source.page_number}`
-                            : "Page unavailable";
-
-                    sourceCard.innerHTML = `
-                        <div class="source-meta">
-                            <span class="source-tag">
-                                ${page}
-                            </span>
-
-                            <span class="source-tag">
-                                Chunk ${source.chunk_index}
-                            </span>
-                        </div>
-
-                        <div class="source-text"></div>
-                    `;
-
-                    // Insert source text safely as plain text.
-                    sourceCard.querySelector(".source-text").textContent =
-                        source.text;
-
-                    sources.appendChild(sourceCard);
-                });
-
-            } else {
-                sources.innerHTML = `
-                    <div class="message info">
-                        No supporting sources were returned.
-                    </div>
-                `;
-            }
-
-        } catch (error) {
-            // Display question-answering errors.
-            answerStatus.textContent = "Request failed";
-            answerCard.textContent = error.message;
-        } finally {
-            // Restore the question button.
-            askButton.disabled = !documentUploaded;
-            askButton.textContent = "Ask document";
-        }
-    });
-
-    // Allow example questions to populate the question box.
-    document.querySelectorAll(".example").forEach(function (button) {
-        button.addEventListener("click", function () {
-            // Do not activate examples before a document is uploaded.
-            if (!documentUploaded) {
                 return;
             }
 
-            question.value = button.dataset.question;
-            question.focus();
-        });
-    });
+            const file = fileInput.files[0];
 
-    // Allow Ctrl+Enter to submit a question quickly.
-    question.addEventListener("keydown", function (event) {
-        if (
-            event.key === "Enter" &&
-            (event.ctrlKey || event.metaKey)
-        ) {
-            event.preventDefault();
+            // Reset the previous document state before processing.
+            documentUploaded = false;
+            uploadedDocumentId = null;
 
-            if (!askButton.disabled) {
-                askButton.click();
+            updateAskState();
+
+            // Build the multipart request expected by FastAPI.
+            const formData = new FormData();
+
+            formData.append("file", file);
+
+            // Show the ingestion processing state.
+            uploadButton.disabled = true;
+            uploadButton.textContent = "Processing...";
+
+            uploadResult.innerHTML = `
+                <div class="message info">
+                    Processing ${file.name}. Extracting content,
+                    creating embeddings and storing chunks...
+                </div>
+            `;
+
+            activatePipeline();
+
+            try {
+
+                // Send the document to the existing upload endpoint.
+                const response = await fetch(
+                    "/upload",
+                    {
+                        method: "POST",
+                        body: formData
+                    }
+                );
+
+                // Read the response as text first so both JSON and non-JSON
+                // error responses can be handled safely.
+                const responseText = await response.text();
+
+                // Attempt to convert a JSON response into an object.
+                let data = null;
+
+                try {
+                    data = JSON.parse(responseText);
+                } catch {
+                    // Keep data as null when the server returns non-JSON content.
+                    data = null;
+                }
+
+                // Surface API validation or processing errors.
+                if (!response.ok) {
+                    throw new Error(
+                        data?.detail ||
+                        responseText ||
+                        "Document processing failed."
+                    );
+                }
+
+                // Ensure a successful upload returned valid JSON.
+                if (!data) {
+                    throw new Error(
+                        "The server returned an invalid upload response."
+                    );
+                }
+
+                // Store the ID returned by the ingestion endpoint.
+                uploadedDocumentId = data.document_id;
+
+                // Mark the document as available for Q&A.
+                documentUploaded = true;
+
+                // Display the active document.
+                documentCard.style.display = "block";
+                documentName.textContent = data.filename;
+
+                // Store the ID returned by the ingestion endpoint.
+                uploadedDocumentId = data.document_id;
+
+                // Mark the document as available for Q&A.
+                documentUploaded = true;
+
+                // Display the active document.
+                documentCard.style.display = "block";
+                documentName.textContent = data.filename;
+
+                // Clear any previous answer and sources.
+                answerCard.textContent =
+                    "Your document is ready. Ask a question to retrieve grounded evidence.";
+
+                sources.innerHTML = "";
+
+                // Enable the Q&A interface.
+                updateAskState();
+
+                // Display the ingestion summary.
+                uploadResult.innerHTML = `
+                    <div class="message success">
+                        <strong>Document ready.</strong>
+                        ${data.chunks_created}
+                        chunks were created, embedded and stored successfully.
+                    </div>
+                `;
+
+            } catch (error) {
+
+                // Keep Q&A disabled if ingestion fails.
+                documentUploaded = false;
+                uploadedDocumentId = null;
+
+                updateAskState();
+
+                // Display the ingestion error.
+                uploadResult.innerHTML = `
+                    <div class="message error">
+                        ${error.message}
+                    </div>
+                `;
+
+            } finally {
+
+                // Restore the upload button.
+                uploadButton.disabled = false;
+                uploadButton.textContent = "Process document";
             }
         }
-    });
+    );
+
+    // Display the generated answer while converting citation labels into superscripts.
+    function displayAnswerWithCitations(answer) {
+
+        // Escape HTML characters so generated text cannot inject markup.
+        const escapedAnswer = answer
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+        // Track each unique citation so repeated references reuse the same number.
+        const citations = [];
+
+        // Convert PDF and TXT citation labels into compact superscript references.
+        const formattedAnswer = escapedAnswer.replace(
+            /\[Page\s+(\d+),\s+Chunk\s+(\d+)\]|\[Chunk\s+(\d+)\]/g,
+            function (_, page, pdfChunk, txtChunk) {
+
+                // Build the citation text according to the document type.
+                const citation = page
+                    ? `Page ${page}, Chunk ${pdfChunk}`
+                    : `Chunk ${txtChunk}`;
+
+                // Find an existing citation number when the reference repeats.
+                let citationNumber =
+                    citations.indexOf(citation) + 1;
+
+                // Create a new citation number for a new source.
+                if (citationNumber === 0) {
+                    citations.push(citation);
+                    citationNumber = citations.length;
+                }
+
+                // Return a compact superscript citation marker.
+                return `
+                    <sup
+                        class="citation-marker"
+                        title="${citation}"
+                        data-citation="${citationNumber}"
+                    >
+                        ${citationNumber}
+                    </sup>
+                `;
+            }
+        );
+
+        // Render the formatted answer.
+        answerCard.innerHTML = formattedAnswer;
+    }
+
+    // Handle document questions.
+    askButton.addEventListener(
+        "click",
+        async function () {
+
+            // Prevent questions from being submitted without an uploaded document.
+            if (
+                !documentUploaded ||
+                !uploadedDocumentId
+            ) {
+
+                answerCard.textContent =
+                    "Please upload and successfully process a document first.";
+
+                return;
+            }
+
+            const questionText =
+                question.value.trim();
+
+            // Prevent empty questions.
+            if (!questionText) {
+
+                answerCard.textContent =
+                    "Please enter a question about the document.";
+
+                return;
+            }
+
+            // Show the retrieval and generation state.
+            askButton.disabled = true;
+            askButton.textContent = "Searching...";
+
+            answerStatus.textContent =
+                "Retrieving evidence...";
+
+            answerCard.textContent =
+                "Searching the document and generating a grounded answer...";
+
+            sources.innerHTML = "";
+
+            try {
+
+                // Send the question to the RAG endpoint.
+                const response = await fetch(
+                    "/ask",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        // Send both the question and the uploaded document ID.
+                        body: JSON.stringify({
+                            question: questionText,
+                            document_id: uploadedDocumentId
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                // Surface API errors.
+                if (!response.ok) {
+                    throw new Error(
+                        data.detail ||
+                        "Unable to answer the question."
+                    );
+                }
+
+                // Display the grounded answer with compact superscript citations.
+                displayAnswerWithCitations(
+                    data.answer
+                );
+
+                answerStatus.textContent =
+                    `${data.sources.length} source(s) retrieved`;
+
+                // Display the supporting source chunks behind a collapsible button.
+                if (data.sources.length) {
+
+                    // Create the main sources panel.
+                    sources.innerHTML = `
+                        <div class="sources-panel">
+
+                            <button
+                                type="button"
+                                class="sources-toggle"
+                                id="sourcesToggle"
+                            >
+                                <span>
+                                    Supporting sources
+                                    (${data.sources.length})
+                                </span>
+
+                                <span class="sources-arrow">
+                                    ▼
+                                </span>
+                            </button>
+
+                            <div
+                                class="sources-content"
+                                id="sourcesContent"
+                            ></div>
+
+                        </div>
+                    `;
+
+                    // Get the hidden sources container.
+                    const sourcesContent =
+                        document.getElementById(
+                            "sourcesContent"
+                        );
+
+                    // Add every retrieved source to the hidden panel.
+                    data.sources.forEach(
+                        function (source) {
+
+                            const sourceCard =
+                                document.createElement(
+                                    "div"
+                                );
+
+                            sourceCard.className =
+                                "source-card";
+
+                            // Display page numbers for PDFs and chunk numbers for TXT files.
+                            const location =
+                                source.page_number !== null
+                                    ? `Page ${source.page_number}`
+                                    : "Text document";
+
+                            sourceCard.innerHTML = `
+                                <div class="source-meta">
+
+                                    <span class="source-tag">
+                                        ${location}
+                                    </span>
+
+                                    <span class="source-tag">
+                                        Chunk ${source.chunk_index}
+                                    </span>
+
+                                </div>
+
+                                <div class="source-text"></div>
+                            `;
+
+                            // Insert source text safely as plain text.
+                            sourceCard
+                                .querySelector(
+                                    ".source-text"
+                                )
+                                .textContent =
+                                source.text;
+
+                            // Add the source card to the hidden sources panel.
+                            sourcesContent.appendChild(
+                                sourceCard
+                            );
+                        }
+                    );
+
+                    // Handle opening and closing the supporting sources.
+                    const sourcesToggle =
+                        document.getElementById(
+                            "sourcesToggle"
+                        );
+
+                    sourcesToggle.addEventListener(
+                        "click",
+                        function () {
+
+                            // Toggle the source content visibility.
+                            sourcesContent.classList.toggle(
+                                "open"
+                            );
+
+                            // Rotate the arrow when the panel opens.
+                            sourcesToggle.classList.toggle(
+                                "open"
+                            );
+                        }
+                    );
+
+                } else {
+
+                    // Explain when no supporting sources were returned.
+                    sources.innerHTML = `
+                        <div class="message info">
+                            No supporting sources were returned.
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+
+                // Display question-answering errors.
+                answerStatus.textContent =
+                    "Request failed";
+
+                answerCard.textContent =
+                    error.message;
+
+            } finally {
+
+                // Restore the question button.
+                askButton.disabled =
+                    !documentUploaded;
+
+                askButton.textContent =
+                    "Ask document";
+            }
+        }
+    );
+
+    // Allow example questions to populate the question box.
+    document
+        .querySelectorAll(".example")
+        .forEach(function (button) {
+
+            button.addEventListener(
+                "click",
+                function () {
+
+                    // Do not activate examples before a document is uploaded.
+                    if (!documentUploaded) {
+                        return;
+                    }
+
+                    question.value =
+                        button.dataset.question;
+
+                    question.focus();
+                }
+            );
+        });
+
+    // Allow Ctrl+Enter to submit a question quickly.
+    question.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (
+                event.key === "Enter" &&
+                (event.ctrlKey || event.metaKey)
+            ) {
+
+                event.preventDefault();
+
+                if (!askButton.disabled) {
+                    askButton.click();
+                }
+            }
+        }
+    );
 
     // Initialize the Q&A interface in its locked state.
     updateAskState();

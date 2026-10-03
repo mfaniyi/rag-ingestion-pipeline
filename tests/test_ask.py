@@ -50,7 +50,8 @@ def test_ask_returns_grounded_answer_with_sources():
         response = client.post(
             "/ask",
             json={
-                "question": "What is the refinery's processing capacity?"
+                "question": "What is the refinery's processing capacity?",
+                "document_id": chunk.document_id,
             },
         )
 
