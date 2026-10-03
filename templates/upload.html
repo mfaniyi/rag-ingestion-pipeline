@@ -1,384 +1,1180 @@
-
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>RAG Document Ingestion</title>
 
-    <style>
-        /* Define the main page layout and typography */
-        * {
-            box-sizing: border-box;
-        }
+<title>DocuMind — RAG Document Assistant</title>
 
+<style>
+    /* Define the global box model and reusable visual variables. */
+    * {
+        box-sizing: border-box;
+    }
+
+    :root {
+        --background: #f5f7fb;
+        --surface: rgba(255, 255, 255, 0.94);
+        --surface-soft: #f8fafc;
+        --border: #e5e7eb;
+        --text: #111827;
+        --muted: #6b7280;
+        --primary: #4f46e5;
+        --primary-dark: #4338ca;
+        --primary-soft: #eef2ff;
+        --success: #059669;
+        --success-soft: #ecfdf5;
+        --danger: #dc2626;
+        --danger-soft: #fef2f2;
+        --shadow: 0 24px 70px rgba(15, 23, 42, 0.10);
+    }
+
+    /* Configure the page background and default typography. */
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+            Inter,
+            ui-sans-serif,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        background:
+            radial-gradient(
+                circle at top left,
+                rgba(79, 70, 229, 0.10),
+                transparent 30%
+            ),
+            radial-gradient(
+                circle at bottom right,
+                rgba(14, 165, 233, 0.08),
+                transparent 30%
+            ),
+            var(--background);
+        color: var(--text);
+        padding: 32px;
+    }
+
+    /* Keep the application centered and constrained on large screens. */
+    .app {
+        width: 100%;
+        max-width: 1380px;
+        margin: 0 auto;
+    }
+
+    /* Create the application header. */
+    .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    /* Style the application brand. */
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* Style the brand icon. */
+    .brand-icon {
+        width: 46px;
+        height: 46px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        font-size: 23px;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.25);
+    }
+
+    /* Style the brand title. */
+    .brand h1 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: -0.3px;
+    }
+
+    /* Style the brand subtitle. */
+    .brand p {
+        margin: 3px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    /* Show the current system status. */
+    .system-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 13px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.75);
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    /* Create the status indicator dot. */
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.10);
+    }
+
+    /* Create the two-column application layout. */
+    .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 22px;
+    }
+
+    /* Style both main application panels. */
+    .panel {
+        background: var(--surface);
+        border: 1px solid rgba(229, 231, 235, 0.9);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+
+    /* Create the panel header. */
+    .panel-header {
+        padding: 26px 28px 18px;
+    }
+
+    /* Style the small panel label. */
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 10px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+    }
+
+    /* Style panel titles. */
+    .panel-header h2 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: -0.6px;
+    }
+
+    /* Style panel descriptions. */
+    .panel-header p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.6;
+        font-size: 14px;
+    }
+
+    /* Add spacing around the panel content. */
+    .panel-body {
+        padding: 0 28px 28px;
+    }
+
+    /* Create the drag-and-drop upload area. */
+    .upload-area {
+        position: relative;
+        padding: 38px 24px;
+        border: 2px dashed #c7d2fe;
+        border-radius: 20px;
+        background:
+            linear-gradient(
+                180deg,
+                rgba(238, 242, 255, 0.75),
+                rgba(248, 250, 252, 0.8)
+            );
+        text-align: center;
+        transition:
+            border-color 0.2s ease,
+            transform 0.2s ease,
+            background 0.2s ease;
+    }
+
+    /* Highlight the upload area during drag operations. */
+    .upload-area.dragging {
+        border-color: var(--primary);
+        background: #eef2ff;
+        transform: translateY(-2px);
+    }
+
+    /* Style the upload icon. */
+    .upload-icon {
+        width: 62px;
+        height: 62px;
+        margin: 0 auto 15px;
+        display: grid;
+        place-items: center;
+        border-radius: 18px;
+        background: white;
+        border: 1px solid #e0e7ff;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.10);
+        font-size: 28px;
+    }
+
+    /* Style the upload heading. */
+    .upload-title {
+        font-size: 17px;
+        font-weight: 750;
+    }
+
+    /* Style the upload helper text. */
+    .upload-info {
+        margin: 8px 0 18px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    /* Hide the native file input while retaining accessibility. */
+    #file {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    /* Style the file selection button. */
+    .browse-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 18px;
+        border: 0;
+        border-radius: 11px;
+        background: var(--primary);
+        color: white;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+
+    /* Add interaction feedback to the browse button. */
+    .browse-button:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+
+    /* Display the selected filename. */
+    .selected-file {
+        display: none;
+        margin-top: 16px;
+        padding: 11px 13px;
+        border-radius: 12px;
+        background: white;
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-size: 13px;
+        text-align: left;
+    }
+
+    /* Display the ingestion pipeline stages. */
+    .pipeline {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 9px;
+        margin-top: 18px;
+    }
+
+    /* Style each ingestion stage. */
+    .pipeline-step {
+        padding: 10px;
+        border-radius: 11px;
+        background: var(--surface-soft);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    /* Style the active ingestion stage. */
+    .pipeline-step.active {
+        background: var(--primary-soft);
+        border-color: #c7d2fe;
+        color: var(--primary-dark);
+    }
+
+    /* Style the primary action button. */
+    .primary-button {
+        width: 100%;
+        margin-top: 18px;
+        padding: 13px 16px;
+        border: 0;
+        border-radius: 12px;
+        background: #111827;
+        color: white;
+        font-size: 14px;
+        font-weight: 750;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+
+    /* Add hover feedback to the primary action. */
+    .primary-button:hover:not(:disabled) {
+        background: #1f2937;
+        transform: translateY(-1px);
+    }
+
+    /* Indicate unavailable actions. */
+    .primary-button:disabled {
+        background: #cbd5e1;
+        cursor: not-allowed;
+    }
+
+    /* Display the current uploaded document. */
+    .document-card {
+        display: none;
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 16px;
+        background: var(--success-soft);
+        border: 1px solid #a7f3d0;
+    }
+
+    /* Arrange document information horizontally. */
+    .document-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* Style the document icon. */
+    .document-icon {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        border-radius: 12px;
+        background: white;
+        font-size: 19px;
+    }
+
+    /* Style the document filename. */
+    .document-name {
+        font-size: 13px;
+        font-weight: 750;
+        word-break: break-word;
+    }
+
+    /* Style the document status. */
+    .document-status {
+        margin-top: 3px;
+        color: var(--success);
+        font-size: 12px;
+    }
+
+    /* Create the question input container. */
+    .question-box {
+        position: relative;
+        margin-top: 4px;
+    }
+
+    /* Style the question textarea. */
+    #question {
+        width: 100%;
+        min-height: 145px;
+        resize: vertical;
+        padding: 17px;
+        border: 1px solid var(--border);
+        border-radius: 17px;
+        outline: none;
+        background: var(--surface-soft);
+        color: var(--text);
+        font: inherit;
+        line-height: 1.6;
+        transition: 0.2s ease;
+    }
+
+    /* Highlight the question input when focused. */
+    #question:focus {
+        border-color: #a5b4fc;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10);
+        background: white;
+    }
+
+    /* Style disabled question input. */
+    #question:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
+    }
+
+    /* Style example question buttons. */
+    .examples {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    /* Style each example question. */
+    .example {
+        padding: 8px 11px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: white;
+        color: #4b5563;
+        font-size: 11px;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+
+    /* Add hover feedback to example questions. */
+    .example:hover {
+        border-color: #a5b4fc;
+        color: var(--primary-dark);
+        background: var(--primary-soft);
+    }
+
+    /* Style the answer area. */
+    .answer-area {
+        margin-top: 22px;
+    }
+
+    /* Style the answer heading. */
+    .answer-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    /* Style the answer title. */
+    .answer-heading h3 {
+        margin: 0;
+        font-size: 14px;
+    }
+
+    /* Style the answer status. */
+    .answer-status {
+        color: var(--muted);
+        font-size: 11px;
+    }
+
+    /* Style the answer card. */
+    .answer-card {
+        min-height: 120px;
+        padding: 18px;
+        border-radius: 16px;
+        background: var(--surface-soft);
+        border: 1px solid var(--border);
+        color: #374151;
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    /* Style source cards. */
+    .source-card {
+        margin-top: 10px;
+        padding: 13px;
+        border-radius: 13px;
+        border: 1px solid var(--border);
+        background: white;
+    }
+
+    /* Arrange source metadata. */
+    .source-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-bottom: 7px;
+    }
+
+    /* Style source metadata labels. */
+    .source-tag {
+        padding: 4px 7px;
+        border-radius: 6px;
+        background: var(--primary-soft);
+        color: var(--primary-dark);
+        font-size: 10px;
+        font-weight: 750;
+    }
+
+    /* Style source text. */
+    .source-text {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    /* Style result and error messages. */
+    .message {
+        margin-top: 16px;
+        padding: 13px 15px;
+        border-radius: 12px;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    /* Style success messages. */
+    .message.success {
+        background: var(--success-soft);
+        border: 1px solid #a7f3d0;
+        color: #065f46;
+    }
+
+    /* Style error messages. */
+    .message.error {
+        background: var(--danger-soft);
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    /* Style informational messages. */
+    .message.info {
+        background: var(--primary-soft);
+        border: 1px solid #c7d2fe;
+        color: #3730a3;
+    }
+
+    /* Style the application footer. */
+    .footer {
+        margin-top: 20px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 11px;
+    }
+
+    /* Adapt the workspace for tablets and mobile screens. */
+    @media (max-width: 900px) {
         body {
-            margin: 0;
-            min-height: 100vh;
-            font-family: Arial, sans-serif;
-            background: #f4f7fb;
-            color: #1f2937;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 30px 15px;
+            padding: 18px;
         }
 
-        /* Main application card */
-        .container {
-            width: 100%;
-            max-width: 720px;
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        .workspace {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Improve usability on small mobile screens. */
+    @media (max-width: 600px) {
+        .topbar {
+            align-items: flex-start;
+            flex-direction: column;
         }
 
-        /* Header section */
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
+        .system-status {
+            align-self: flex-start;
         }
 
-        .header-icon {
-            font-size: 42px;
-            margin-bottom: 10px;
+        .panel-header,
+        .panel-body {
+            padding-left: 20px;
+            padding-right: 20px;
         }
 
-        h1 {
-            margin: 0 0 10px;
-            font-size: 30px;
+        .panel-header h2 {
+            font-size: 21px;
         }
 
-        .subtitle {
-            margin: 0;
-            color: #6b7280;
-            line-height: 1.6;
-        }
-
-        /* Upload area */
-        .upload-area {
-            border: 2px dashed #cbd5e1;
-            border-radius: 12px;
-            padding: 35px 20px;
-            text-align: center;
-            background: #f8fafc;
-            transition: 0.2s ease;
-        }
-
-        .upload-area:hover {
-            border-color: #64748b;
-            background: #f1f5f9;
-        }
-
-        .upload-icon {
-            font-size: 36px;
-            margin-bottom: 12px;
-        }
-
-        .upload-title {
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-
-        .upload-info {
-            font-size: 14px;
-            color: #6b7280;
-            margin-bottom: 20px;
-        }
-
-        /* File input */
-        input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: white;
-        }
-
-        /* Upload button */
-        button {
-            width: 100%;
-            margin-top: 18px;
-            padding: 13px;
-            border: none;
-            border-radius: 8px;
-            background: #2563eb;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s ease;
-        }
-
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        button:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        /* Processing pipeline */
         .pipeline {
-            margin-top: 30px;
+            grid-template-columns: repeat(2, 1fr);
         }
+    }
+</style>
+```
 
-        .pipeline-title {
-            text-align: center;
-            font-size: 14px;
-            font-weight: bold;
-            color: #6b7280;
-            margin-bottom: 12px;
-        }
-
-        .steps {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .step {
-            padding: 7px 11px;
-            border-radius: 20px;
-            background: #eef2ff;
-            color: #3730a3;
-            font-size: 13px;
-        }
-
-        /* Result section */
-        #result {
-            margin-top: 25px;
-        }
-
-        .success {
-            padding: 20px;
-            border-radius: 10px;
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
-        }
-
-        .success h3 {
-            margin-top: 0;
-            margin-bottom: 12px;
-        }
-
-        .result-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            padding: 7px 0;
-            border-bottom: 1px solid #d1fae5;
-            font-size: 14px;
-        }
-
-        .result-row:last-child {
-            border-bottom: none;
-        }
-
-        .result-label {
-            color: #065f46;
-        }
-
-        .result-value {
-            font-weight: bold;
-            text-align: right;
-            word-break: break-word;
-        }
-
-        .error {
-            padding: 15px;
-            border-radius: 10px;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #991b1b;
-        }
-
-        /* Footer note */
-        .footer {
-            text-align: center;
-            margin-top: 25px;
-            color: #9ca3af;
-            font-size: 12px;
-        }
-
-        /* Improve layout on smaller screens */
-        @media (max-width: 600px) {
-            .container {
-                padding: 25px 20px;
-            }
-
-            h1 {
-                font-size: 25px;
-            }
-        }
-    </style>
 </head>
 
 <body>
 
-    <main class="container">
+```
+<main class="app">
 
-        <!-- Application header -->
-        <div class="header">
-            <div class="header-icon">📚</div>
+    <!-- Display the application brand and system status. -->
+    <header class="topbar">
+        <div class="brand">
+            <div class="brand-icon">✦</div>
 
-            <h1>RAG Document Ingestion</h1>
-
-            <p class="subtitle">
-                Upload a document and let the ingestion pipeline
-                prepare it for retrieval.
-            </p>
+            <div>
+                <h1>DocuMind</h1>
+                <p>Grounded document intelligence</p>
+            </div>
         </div>
 
-        <!-- Document upload form -->
-        <form id="uploadForm">
+        <div class="system-status">
+            <span class="status-dot"></span>
+            RAG system online
+        </div>
+    </header>
 
-            <div class="upload-area">
-                <div class="upload-icon">📄</div>
+    <!-- Divide the application into ingestion and question-answering panels. -->
+    <section class="workspace">
 
-                <div class="upload-title">
-                    Select a document to upload
-                </div>
+        <!-- Document ingestion panel. -->
+        <section class="panel">
 
-                <div class="upload-info">
-                    Supported formats: PDF and TXT · Maximum size: 10 MB
-                </div>
+            <div class="panel-header">
+                <div class="eyebrow">01 · Knowledge</div>
 
-                <!-- Allow only supported document types -->
-                <input
-                    type="file"
-                    id="file"
-                    name="file"
-                    accept=".pdf,.txt"
-                    required
-                >
+                <h2>Upload a document</h2>
 
-                <!-- Start the ingestion process -->
-                <button type="submit" id="uploadButton">
-                    Upload & Process Document
-                </button>
+                <p>
+                    Add a PDF or text document to your knowledge base.
+                    The pipeline will extract, chunk, embed and store
+                    the content for retrieval.
+                </p>
             </div>
 
-        </form>
+            <div class="panel-body">
 
-        <!-- Show the ingestion pipeline -->
-        <section class="pipeline">
+                <!-- Handle document selection and ingestion. -->
+                <form id="uploadForm">
 
-            <div class="pipeline-title">
-                INGESTION PIPELINE
-            </div>
+                    <div class="upload-area" id="uploadArea">
 
-            <div class="steps">
-                <span class="step">Upload</span>
-                <span class="step">Validate</span>
-                <span class="step">Extract</span>
-                <span class="step">Chunk</span>
-                <span class="step">Embed</span>
-                <span class="step">Store</span>
+                        <div class="upload-icon">📄</div>
+
+                        <div class="upload-title">
+                            Drop your document here
+                        </div>
+
+                        <div class="upload-info">
+                            or select a file from your computer<br>
+                            PDF or TXT · Maximum 10 MB
+                        </div>
+
+                        <!-- Open the native file selector. -->
+                        <label for="file" class="browse-button">
+                            Choose document
+                        </label>
+
+                        <!-- Store the selected document. -->
+                        <input
+                            type="file"
+                            id="file"
+                            name="file"
+                            accept=".pdf,.txt"
+                            required
+                        >
+
+                        <!-- Display the selected filename. -->
+                        <div id="selectedFile" class="selected-file"></div>
+
+                    </div>
+
+                    <!-- Display the ingestion stages. -->
+                    <div class="pipeline">
+
+                        <div class="pipeline-step" id="stepUpload">
+                            01 · Upload
+                        </div>
+
+                        <div class="pipeline-step" id="stepValidate">
+                            02 · Validate
+                        </div>
+
+                        <div class="pipeline-step" id="stepExtract">
+                            03 · Extract
+                        </div>
+
+                        <div class="pipeline-step" id="stepChunk">
+                            04 · Chunk
+                        </div>
+
+                        <div class="pipeline-step" id="stepEmbed">
+                            05 · Embed
+                        </div>
+
+                        <div class="pipeline-step" id="stepStore">
+                            06 · Store
+                        </div>
+
+                    </div>
+
+                    <!-- Start document ingestion. -->
+                    <button
+                        type="submit"
+                        class="primary-button"
+                        id="uploadButton"
+                    >
+                        Process document
+                    </button>
+
+                </form>
+
+                <!-- Show the active uploaded document. -->
+                <div id="documentCard" class="document-card">
+
+                    <div class="document-info">
+
+                        <div class="document-icon">
+                            ✓
+                        </div>
+
+                        <div>
+                            <div id="documentName" class="document-name">
+                                Document uploaded
+                            </div>
+
+                            <div class="document-status">
+                                Ready for questions
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Display ingestion results and errors. -->
+                <div id="uploadResult"></div>
+
             </div>
 
         </section>
 
-        <!-- Display the API result -->
-        <div id="result"></div>
+        <!-- Document question-answering panel. -->
+        <section class="panel">
 
-        <div class="footer">
-            Powered by FastAPI · PostgreSQL · pgvector
-        </div>
+            <div class="panel-header">
+                <div class="eyebrow">02 · Ask</div>
 
-    </main>
+                <h2>Ask your document</h2>
 
-    <script>
-        // Handle the document upload without refreshing the page.
-        document.getElementById("uploadForm").addEventListener("submit", async function (event) {
-            event.preventDefault();
+                <p id="askDescription">
+                    Upload and process a document first. Then ask
+                    questions and receive answers grounded in the
+                    retrieved document evidence.
+                </p>
+            </div>
 
-            const fileInput = document.getElementById("file");
-            const uploadButton = document.getElementById("uploadButton");
-            const result = document.getElementById("result");
+            <div class="panel-body">
 
-            // Make sure a file has been selected.
-            if (!fileInput.files.length) {
-                result.innerHTML = `
-                    <div class="error">
-                        Please select a document before uploading.
+                <!-- Capture the user's document question. -->
+                <div class="question-box">
+
+                    <textarea
+                        id="question"
+                        placeholder="Upload a document to start asking questions..."
+                        disabled
+                    ></textarea>
+
+                </div>
+
+                <!-- Provide example questions that work with different documents. -->
+                <div class="examples">
+
+                    <button
+                        type="button"
+                        class="example"
+                        data-question="What is this document about?"
+                    >
+                        What is this document about?
+                    </button>
+
+                    <button
+                        type="button"
+                        class="example"
+                        data-question="What are the main points discussed in the document?"
+                    >
+                        What are the main points?
+                    </button>
+
+                    <button
+                        type="button"
+                        class="example"
+                        data-question="What important facts should I know from this document?"
+                    >
+                        Key facts
+                    </button>
+
+                </div>
+
+                <!-- Submit a document question. -->
+                <button
+                    type="button"
+                    class="primary-button"
+                    id="askButton"
+                    disabled
+                >
+                    Ask document
+                </button>
+
+                <!-- Display the generated answer and sources. -->
+                <div class="answer-area">
+
+                    <div class="answer-heading">
+                        <h3>Answer</h3>
+                        <span id="answerStatus" class="answer-status">
+                            Waiting for a document
+                        </span>
                     </div>
-                `;
-                return;
+
+                    <div id="answerCard" class="answer-card">
+                        Upload and process a document to activate
+                        document Q&A.
+                    </div>
+
+                    <div id="sources"></div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </section>
+
+    <div class="footer">
+        FastAPI · PostgreSQL · pgvector · Hybrid Retrieval · Reranking · LLM
+    </div>
+
+</main>
+
+<script>
+    // Track whether a document has successfully completed ingestion.
+    let documentUploaded = false;
+
+    // Cache the main interface elements.
+    const uploadForm = document.getElementById("uploadForm");
+    const fileInput = document.getElementById("file");
+    const uploadArea = document.getElementById("uploadArea");
+    const selectedFile = document.getElementById("selectedFile");
+    const uploadButton = document.getElementById("uploadButton");
+    const uploadResult = document.getElementById("uploadResult");
+    const documentCard = document.getElementById("documentCard");
+    const documentName = document.getElementById("documentName");
+    const question = document.getElementById("question");
+    const askButton = document.getElementById("askButton");
+    const answerCard = document.getElementById("answerCard");
+    const answerStatus = document.getElementById("answerStatus");
+    const sources = document.getElementById("sources");
+
+    // Enable or disable the question interface based on document state.
+    function updateAskState() {
+        question.disabled = !documentUploaded;
+        askButton.disabled = !documentUploaded;
+
+        if (documentUploaded) {
+            question.placeholder =
+                "Ask a question about the uploaded document...";
+            answerStatus.textContent = "Document ready";
+            answerCard.textContent =
+                "Your document is ready. Ask a question to retrieve grounded evidence.";
+        } else {
+            question.placeholder =
+                "Upload a document to start asking questions...";
+            answerStatus.textContent = "Waiting for a document";
+        }
+    }
+
+    // Show the selected filename before ingestion begins.
+    fileInput.addEventListener("change", function () {
+        if (!fileInput.files.length) {
+            selectedFile.style.display = "none";
+            return;
+        }
+
+        const file = fileInput.files[0];
+
+        selectedFile.style.display = "block";
+        selectedFile.textContent = `Selected: ${file.name}`;
+
+        // A newly selected document requires a new ingestion cycle.
+        documentUploaded = false;
+        documentCard.style.display = "none";
+        updateAskState();
+    });
+
+    // Allow users to drag files into the upload area.
+    uploadArea.addEventListener("dragover", function (event) {
+        event.preventDefault();
+        uploadArea.classList.add("dragging");
+    });
+
+    // Remove the drag highlight when the pointer leaves the area.
+    uploadArea.addEventListener("dragleave", function () {
+        uploadArea.classList.remove("dragging");
+    });
+
+    // Accept a dropped document and populate the file input.
+    uploadArea.addEventListener("drop", function (event) {
+        event.preventDefault();
+        uploadArea.classList.remove("dragging");
+
+        const files = event.dataTransfer.files;
+
+        if (!files.length) {
+            return;
+        }
+
+        fileInput.files = files;
+        fileInput.dispatchEvent(new Event("change"));
+    });
+
+    // Highlight each ingestion stage while processing.
+    function activatePipeline() {
+        const steps = [
+            "stepUpload",
+            "stepValidate",
+            "stepExtract",
+            "stepChunk",
+            "stepEmbed",
+            "stepStore"
+        ];
+
+        steps.forEach(function (stepId) {
+            document.getElementById(stepId).classList.add("active");
+        });
+    }
+
+    // Handle document ingestion without refreshing the page.
+    uploadForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        if (!fileInput.files.length) {
+            uploadResult.innerHTML = `
+                <div class="message error">
+                    Please choose a document before processing.
+                </div>
+            `;
+            return;
+        }
+
+        const file = fileInput.files[0];
+
+        // Reset the previous document state before processing.
+        documentUploaded = false;
+        updateAskState();
+
+        // Build the multipart request expected by FastAPI.
+        const formData = new FormData();
+        formData.append("file", file);
+
+        // Show the ingestion processing state.
+        uploadButton.disabled = true;
+        uploadButton.textContent = "Processing...";
+        uploadResult.innerHTML = `
+            <div class="message info">
+                Processing ${file.name}. Extracting content,
+                creating embeddings and storing chunks...
+            </div>
+        `;
+
+        activatePipeline();
+
+        try {
+            // Send the document to the existing upload endpoint.
+            const response = await fetch("/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+
+            // Surface API validation or processing errors.
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Document processing failed."
+                );
             }
 
-            // Create form data containing the selected document.
-            const formData = new FormData();
-            formData.append("file", fileInput.files[0]);
+            // Mark the document as available for Q&A.
+            documentUploaded = true;
 
-            // Show the processing state.
-            uploadButton.disabled = true;
-            uploadButton.textContent = "Processing document...";
-            result.innerHTML = `
-                <div class="success">
-                    Your document is being processed. Please wait...
+            // Display the active document.
+            documentCard.style.display = "block";
+            documentName.textContent = data.filename;
+
+            // Clear any previous answer and sources.
+            answerCard.textContent =
+                "Your document is ready. Ask a question to retrieve grounded evidence.";
+            sources.innerHTML = "";
+
+            // Enable the Q&A interface.
+            updateAskState();
+
+            // Display the ingestion summary.
+            uploadResult.innerHTML = `
+                <div class="message success">
+                    <strong>Document ready.</strong>
+                    ${data.chunks_created} chunks were created,
+                    embedded and stored successfully.
                 </div>
             `;
 
-            try {
-                // Send the document to the existing ingestion endpoint.
-                const response = await fetch("/upload", {
-                    method: "POST",
-                    body: formData
+        } catch (error) {
+            // Keep Q&A disabled if ingestion fails.
+            documentUploaded = false;
+            updateAskState();
+
+            // Display the ingestion error.
+            uploadResult.innerHTML = `
+                <div class="message error">
+                    ${error.message}
+                </div>
+            `;
+        } finally {
+            // Restore the upload button.
+            uploadButton.disabled = false;
+            uploadButton.textContent = "Process document";
+        }
+    });
+
+    // Handle document questions.
+    askButton.addEventListener("click", async function () {
+        // Prevent questions from being submitted without an uploaded document.
+        if (!documentUploaded) {
+            answerCard.textContent =
+                "Please upload and successfully process a document first.";
+            return;
+        }
+
+        const questionText = question.value.trim();
+
+        // Prevent empty questions.
+        if (!questionText) {
+            answerCard.textContent =
+                "Please enter a question about the document.";
+            return;
+        }
+
+        // Show the retrieval and generation state.
+        askButton.disabled = true;
+        askButton.textContent = "Searching...";
+        answerStatus.textContent = "Retrieving evidence...";
+        answerCard.textContent =
+            "Searching the document and generating a grounded answer...";
+        sources.innerHTML = "";
+
+        try {
+            // Send the question to the existing RAG endpoint.
+            const response = await fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    question: questionText
+                })
+            });
+
+            const data = await response.json();
+
+            // Surface API errors.
+            if (!response.ok) {
+                throw new Error(
+                    data.detail || "Unable to answer the question."
+                );
+            }
+
+            // Display the grounded answer.
+            answerCard.textContent = data.answer;
+            answerStatus.textContent =
+                `${data.sources.length} source(s) retrieved`;
+
+            // Display the supporting source chunks.
+            if (data.sources.length) {
+                sources.innerHTML = `
+                    <div style="
+                        margin-top: 18px;
+                        margin-bottom: 9px;
+                        font-size: 13px;
+                        font-weight: 750;
+                    ">
+                        Supporting sources
+                    </div>
+                `;
+
+                data.sources.forEach(function (source) {
+                    const sourceCard =
+                        document.createElement("div");
+
+                    sourceCard.className = "source-card";
+
+                    const page =
+                        source.page_number !== null
+                            ? `Page ${source.page_number}`
+                            : "Page unavailable";
+
+                    sourceCard.innerHTML = `
+                        <div class="source-meta">
+                            <span class="source-tag">
+                                ${page}
+                            </span>
+
+                            <span class="source-tag">
+                                Chunk ${source.chunk_index}
+                            </span>
+                        </div>
+
+                        <div class="source-text"></div>
+                    `;
+
+                    // Insert source text safely as plain text.
+                    sourceCard.querySelector(".source-text").textContent =
+                        source.text;
+
+                    sources.appendChild(sourceCard);
                 });
 
-                const data = await response.json();
-
-                // Display validation or processing errors.
-                if (!response.ok) {
-                    throw new Error(data.detail || "Document processing failed.");
-                }
-
-                // Display a friendly ingestion summary.
-                result.innerHTML = `
-                    <div class="success">
-                        <h3>✅ Document successfully processed</h3>
-
-                        <div class="result-row">
-                            <span class="result-label">File</span>
-                            <span class="result-value">${data.filename}</span>
-                        </div>
-
-                        <div class="result-row">
-                            <span class="result-label">Chunks created</span>
-                            <span class="result-value">${data.chunks_created}</span>
-                        </div>
-
-                        <div class="result-row">
-                            <span class="result-label">Embeddings generated</span>
-                            <span class="result-value">${data.embeddings_generated}</span>
-                        </div>
-
-                        <div class="result-row">
-                            <span class="result-label">Chunks stored</span>
-                            <span class="result-value">${data.stored}</span>
-                        </div>
+            } else {
+                sources.innerHTML = `
+                    <div class="message info">
+                        No supporting sources were returned.
                     </div>
                 `;
-
-            } catch (error) {
-                // Display the error message if processing fails.
-                result.innerHTML = `
-                    <div class="error">
-                        ❌ ${error.message}
-                    </div>
-                `;
-            } finally {
-                // Restore the upload button after processing.
-                uploadButton.disabled = false;
-                uploadButton.textContent = "Upload & Process Document";
             }
+
+        } catch (error) {
+            // Display question-answering errors.
+            answerStatus.textContent = "Request failed";
+            answerCard.textContent = error.message;
+        } finally {
+            // Restore the question button.
+            askButton.disabled = !documentUploaded;
+            askButton.textContent = "Ask document";
+        }
+    });
+
+    // Allow example questions to populate the question box.
+    document.querySelectorAll(".example").forEach(function (button) {
+        button.addEventListener("click", function () {
+            // Do not activate examples before a document is uploaded.
+            if (!documentUploaded) {
+                return;
+            }
+
+            question.value = button.dataset.question;
+            question.focus();
         });
-    </script>
+    });
+
+    // Allow Ctrl+Enter to submit a question quickly.
+    question.addEventListener("keydown", function (event) {
+        if (
+            event.key === "Enter" &&
+            (event.ctrlKey || event.metaKey)
+        ) {
+            event.preventDefault();
+
+            if (!askButton.disabled) {
+                askButton.click();
+            }
+        }
+    });
+
+    // Initialize the Q&A interface in its locked state.
+    updateAskState();
+</script>
 
 </body>
 </html>
