@@ -1,0 +1,80 @@
+[
+  {
+    "question_id": "q1",
+    "question": "What is a key benefit of data analysis?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-008",
+      "mlt-001-chunk-013"
+    ]
+  },
+  {
+    "question_id": "q2",
+    "question": "What is the common flow of activity in Power BI?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-009",
+      "mlt-001-chunk-014"
+    ]
+  },
+  {
+    "question_id": "q3",
+    "question": "What is query folding and what are its benefits?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-021",
+      "mlt-001-chunk-022"
+    ]
+  },
+  {
+    "question_id": "q4",
+    "question": "What is the primary data preparation tool in Power BI?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-023"
+    ]
+  },
+  {
+    "question_id": "q5",
+    "question": "What is the difference between fact tables and dimension tables?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-031",
+      "mlt-001-chunk-032"
+    ]
+  },
+  {
+    "question_id": "q6",
+    "question": "What are measures in Power BI and how are they calculated?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-039",
+      "mlt-001-chunk-042"
+    ]
+  },
+  {
+    "question_id": "q7",
+    "question": "Why is the CALCULATE function important in DAX?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-043"
+    ]
+  },
+  {
+    "question_id": "q8",
+    "question": "Which tool can be used to identify performance bottlenecks in Power BI?",
+    "relevant_chunk_ids": [
+    "mlt-001-chunk-047",
+    "mlt-001-chunk-052",
+    "mlt-001-chunk-053"
+    ]
+  },
+  {
+    "question_id": "q9",
+    "question": "What is cardinality in a Power BI data model?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-048",
+      "mlt-001-chunk-051"
+    ]
+  },
+  {
+    "question_id": "q10",
+    "question": "Can bookmarks be used to create a slide show in Power BI?",
+    "relevant_chunk_ids": [
+      "mlt-001-chunk-059"
+    ]
+  }
+]
